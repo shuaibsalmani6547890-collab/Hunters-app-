@@ -1,0 +1,462 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Hunter System</title>
+    <link rel="manifest" href="manifest.json">
+    <link rel="icon" href="icon.svg" type="image/svg+xml">
+    <meta name="theme-color" content="#0a0f1c">
+    <style>
+        :root {
+            --bg-color: #0a0f1c;
+            --panel-bg: #111827;
+            --gold: #f59e0b;
+            --gold-light: #fbbf24;
+            --text-main: #f3f4f6;
+            --text-dim: #9ca3af;
+            --border: #374151;
+            --danger: #ef4444;
+            --success: #10b981;
+            --font-main: 'Courier New', Courier, monospace; /* Gaming/Sharp feel */
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            user-select: none;
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        body {
+            background-color: var(--bg-color);
+            color: var(--text-main);
+            font-family: var(--font-main);
+            padding-bottom: 70px;
+            overflow-x: hidden;
+        }
+
+        /* HEADER */
+        header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 15px 20px;
+            background: linear-gradient(90deg, #0a0f1c, #111827);
+            border-bottom: 2px solid var(--gold);
+            position: sticky;
+            top: 0;
+            z-index: 100;
+        }
+        .logo { font-size: 20px; font-weight: bold; color: var(--gold); letter-spacing: 2px; text-shadow: 0 0 10px rgba(245,158,11,0.5); }
+        .header-stats { display: flex; gap: 10px; font-size: 14px; }
+        .badge { background: var(--panel-bg); border: 1px solid var(--gold); padding: 4px 8px; border-radius: 4px; }
+
+        /* CONTAINERS */
+        .container { padding: 15px; display: none; }
+        .container.active { display: block; }
+        
+        .panel {
+            background: var(--panel-bg);
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            padding: 15px;
+            margin-bottom: 15px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.3);
+            position: relative;
+        }
+        .panel::before {
+            content: ''; position: absolute; top: 0; left: 0; width: 20px; height: 20px;
+            border-top: 2px solid var(--gold); border-left: 2px solid var(--gold);
+            border-top-left-radius: 8px;
+        }
+        .panel-title { color: var(--gold); font-size: 14px; margin-bottom: 15px; display: flex; align-items: center; gap: 5px; text-transform: uppercase; letter-spacing: 1px; }
+
+        /* LOGIN SCREEN */
+        #login-screen {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100vh;
+            background: var(--bg-color); z-index: 1000;
+            display: flex; flex-direction: column; justify-content: center; align-items: center; padding: 20px;
+        }
+        #login-screen input {
+            width: 100%; max-width: 300px; padding: 12px; margin-bottom: 15px;
+            background: #000; border: 1px solid var(--gold); color: var(--gold);
+            border-radius: 5px; font-family: var(--font-main); text-align: center; outline: none;
+        }
+        .btn {
+            background: var(--gold); color: #000; border: none; padding: 10px 20px;
+            font-family: var(--font-main); font-weight: bold; border-radius: 5px;
+            cursor: pointer; text-transform: uppercase; letter-spacing: 1px; transition: 0.2s;
+            box-shadow: 0 0 10px rgba(245,158,11,0.3);
+        }
+        .btn:active { transform: scale(0.95); }
+        .btn-outline { background: transparent; border: 1px solid var(--gold); color: var(--gold); }
+        
+        /* PROFILE */
+        .profile-header { display: flex; align-items: center; gap: 15px; }
+        .avatar { width: 60px; height: 60px; background: #1e293b; border: 2px solid var(--gold); border-radius: 50%; display: flex; justify-content: center; align-items: center; font-size: 30px; }
+        .name-rank h2 { font-size: 18px; margin-bottom: 2px; }
+        .rank-text { color: var(--gold-light); font-size: 12px; }
+        .power { font-size: 12px; color: var(--text-dim); margin-top: 5px; }
+
+        /* PROGRESS BAR */
+        .progress-container { width: 100%; background: #000; height: 8px; border-radius: 4px; margin-top: 15px; overflow: hidden; border: 1px solid var(--border); }
+        .progress-bar { height: 100%; background: linear-gradient(90deg, var(--gold), var(--gold-light)); width: 0%; transition: width 0.3s ease; }
+
+        /* TASKS */
+        .task-item {
+            display: flex; justify-content: space-between; align-items: center;
+            padding: 10px 0; border-bottom: 1px dashed var(--border);
+        }
+        .task-item:last-child { border-bottom: none; }
+        .task-info h4 { font-size: 14px; margin-bottom: 5px; }
+        .task-info span { font-size: 12px; color: var(--success); }
+        .task-action { display: flex; align-items: center; gap: 10px; }
+        .task-count { font-size: 12px; color: var(--text-dim); }
+        
+        /* INPUTS & SHOP */
+        .input-group { display: flex; gap: 10px; margin-top: 10px; }
+        .input-group input { flex: 1; background: #000; border: 1px solid var(--border); color: #fff; padding: 8px; border-radius: 4px; outline: none; font-family: var(--font-main); }
+        .shop-item { display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; background: #1f2937; padding: 10px; border-radius: 5px; }
+        
+        /* BOTTOM NAV */
+        .bottom-nav {
+            position: fixed; bottom: 0; left: 0; width: 100%; height: 65px;
+            background: var(--panel-bg); border-top: 1px solid var(--border);
+            display: flex; justify-content: space-around; align-items: center; z-index: 100;
+        }
+        .nav-item {
+            display: flex; flex-direction: column; align-items: center; color: var(--text-dim);
+            font-size: 10px; cursor: pointer; transition: 0.3s; width: 25%;
+        }
+        .nav-item.active { color: var(--gold); text-shadow: 0 0 8px rgba(245,158,11,0.6); }
+        .nav-icon { font-size: 20px; margin-bottom: 4px; }
+
+        /* MODAL FOR ALERTS */
+        #custom-alert {
+            position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%);
+            background: var(--panel-bg); border: 2px solid var(--gold); padding: 20px;
+            border-radius: 8px; z-index: 2000; text-align: center; display: none; width: 80%; max-width: 300px;
+        }
+    </style>
+</head>
+<body>
+
+    <!-- LOGIN SCREEN -->
+    <div id="login-screen">
+        <div class="logo" style="font-size: 28px; margin-bottom: 30px;">HUNTER SYSTEM</div>
+        <input type="text" id="username-input" placeholder="ENTER HUNTER NAME" maxlength="12">
+        <button class="btn" onclick="login()">Initialize System</button>
+    </div>
+
+    <!-- MAIN APP -->
+    <div id="app" style="display: none;">
+        <header>
+            <div class="logo">HUNTER</div>
+            <div class="header-stats">
+                <div class="badge" id="header-level">LV 1</div>
+                <div class="badge" id="header-gold">🪙 0</div>
+            </div>
+        </header>
+
+        <!-- TAB 1: HUNTER PROFILE -->
+        <div id="tab-hunter" class="container active">
+            <div class="panel">
+                <div class="profile-header">
+                    <div class="avatar">👤</div>
+                    <div class="name-rank">
+                        <h2 id="ui-name">Shuaib</h2>
+                        <div class="rank-text" id="ui-rank">BRONZE III</div>
+                        <div class="power">⚔️ POWER <span id="ui-power">300</span></div>
+                    </div>
+                </div>
+                <div style="text-align: center; font-size: 24px; font-weight: bold; margin-top: 20px;">LV <span id="ui-level">1</span></div>
+                <div class="progress-container"><div class="progress-bar" id="ui-xp-bar"></div></div>
+                <div style="text-align: center; font-size: 12px; margin-top: 5px; color: var(--text-dim);"><span id="ui-xp-text">0 / 100</span> XP</div>
+            </div>
+
+            <!-- SEARCH PLAYER -->
+            <div class="panel">
+                <div class="panel-title">🔍 Scan Hunter</div>
+                <p style="font-size: 12px; color: var(--text-dim); margin-bottom: 10px;">Enter Hunter ID to compare (Try: HNT-KGWNG or HNT-SHUAIB)</p>
+                <div class="input-group">
+                    <input type="text" id="search-id" placeholder="HNT-XXXXX">
+                    <button class="btn" onclick="searchHunter()">Scan</button>
+                </div>
+                <div id="search-result" style="margin-top: 15px; font-size: 12px; display: none; border-top: 1px solid var(--border); padding-top: 10px;"></div>
+            </div>
+
+            <!-- RESET STATS (All Reset Option) -->
+            <div class="panel">
+                <div class="panel-title">⚙️ Settings</div>
+                <button class="btn-outline btn" style="width: 100%; border-color: var(--danger); color: var(--danger);" onclick="resetGame()">RESET ALL STATS</button>
+            </div>
+        </div>
+
+        <!-- TAB 2: QUESTS (Dynamic Difficulty) -->
+        <div id="tab-quest" class="container">
+            <div class="panel" style="display: flex; justify-content: space-between; align-items: center;">
+                <div>
+                    <div style="font-size: 12px; color: var(--text-dim);">TODAY'S PROGRESS</div>
+                    <div style="font-size: 18px; font-weight: bold;"><span id="ui-task-completed">0</span>/4 TASKS</div>
+                </div>
+                <div style="text-align: right;">
+                    <div style="font-size: 12px; color: var(--gold);">🔥 STREAK <span id="ui-streak">0</span></div>
+                </div>
+            </div>
+            
+            <div class="panel">
+                <div class="panel-title">⚡ Daily Quest</div>
+                <div id="task-list">
+                    <!-- Tasks injected by JS -->
+                </div>
+            </div>
+        </div>
+
+        <!-- TAB 3: SHOP -->
+        <div id="tab-shop" class="container">
+            <div class="panel">
+                <div class="panel-title">🛒 System Shop</div>
+                <div class="shop-item">
+                    <div>
+                        <div style="font-weight: bold; color: var(--gold);">Streak Shield</div>
+                        <div style="font-size: 10px; color: var(--text-dim);">Prevents streak reset once.</div>
+                    </div>
+                    <button class="btn" style="padding: 5px 10px; font-size: 12px;" onclick="buyItem('shield', 150)">150 🪙</button>
+                </div>
+                <div class="shop-item">
+                    <div>
+                        <div style="font-weight: bold; color: var(--gold);">XP Scroll x2</div>
+                        <div style="font-size: 10px; color: var(--text-dim);">Double XP for next task.</div>
+                    </div>
+                    <button class="btn" style="padding: 5px 10px; font-size: 12px;" onclick="buyItem('xp_scroll', 100)">100 🪙</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- BOTTOM NAVIGATION -->
+        <div class="bottom-nav">
+            <div class="nav-item active" onclick="switchTab('hunter')">
+                <div class="nav-icon">🛡️</div>HUNTER
+            </div>
+            <div class="nav-item" onclick="switchTab('quest')">
+                <div class="nav-icon">⚔️</div>QUEST
+            </div>
+            <div class="nav-item" onclick="switchTab('shop')">
+                <div class="nav-icon">🛒</div>SHOP
+            </div>
+        </div>
+    </div>
+
+    <!-- CUSTOM ALERT -->
+    <div id="custom-alert">
+        <div id="alert-msg" style="margin-bottom: 15px; font-size: 14px;"></div>
+        <button class="btn" onclick="document.getElementById('custom-alert').style.display='none'">OK</button>
+    </div>
+
+    <script>
+        // --- STATE MANAGEMENT ---
+        let user = {
+            name: "",
+            id: "",
+            level: 1,
+            xp: 0,
+            power: 300,
+            gold: 0,
+            streak: 0,
+            tasksDone: 0,
+            isLoggedIn: false,
+            stats: { str: 10, agi: 10, vit: 10, end: 10, spr: 10 }
+        };
+
+        // Task Base Configurations
+        const baseTasks = [
+            { id: 'pushup', name: 'Push-ups', type: 'reps', baseTarget: 10, baseXp: 20 },
+            { id: 'squat', name: 'Squats', type: 'reps', baseTarget: 15, baseXp: 30 },
+            { id: 'situp', name: 'Sit-ups', type: 'reps', baseTarget: 10, baseXp: 20 },
+            { id: 'run', name: 'Running', type: 'km', baseTarget: 1, baseXp: 25 }
+        ];
+
+        // Initialize App
+        window.onload = () => {
+            loadData();
+            if (user.isLoggedIn) {
+                showApp();
+            }
+        };
+
+        function login() {
+            const nameInput = document.getElementById('username-input').value.trim();
+            if (nameInput === "") return alertMsg("Enter a valid Hunter Name!");
+
+            user.name = nameInput;
+            // Generate short Hunter Code (e.g., HNT-A1B2C)
+            user.id = "HNT-" + Math.random().toString(36).substring(2, 7).toUpperCase();
+            user.isLoggedIn = true;
+            
+            saveData();
+            showApp();
+        }
+
+        function showApp() {
+            document.getElementById('login-screen').style.display = 'none';
+            document.getElementById('app').style.display = 'block';
+            
+            // Set UI values
+            document.getElementById('ui-name').innerText = user.name;
+            document.getElementById('header-level').innerText = "LV " + user.level;
+            
+            // Set initial tasks for today
+            generateTasks();
+            updateUI();
+        }
+
+        // --- TASK & DIFFICULTY LOGIC ---
+        function generateTasks() {
+            const taskList = document.getElementById('task-list');
+            taskList.innerHTML = '';
+
+            // Difficulty Scaling: Every level adds 10% more reps & XP
+            const diffMultiplier = 1 + (user.level * 0.1);
+
+            baseTasks.forEach(task => {
+                // Calculate dynamic target based on level
+                let target = Math.round(task.baseTarget * diffMultiplier);
+                let xp = Math.round(task.baseXp * diffMultiplier);
+
+                let html = `
+                    <div class="task-item">
+                        <div class="task-info">
+                            <h4>${task.name}</h4>
+                            <span>Reward +${xp} XP</span>
+                        </div>
+                        <div class="task-action">
+                            <div class="task-count">0/${target} ${task.type}</div>
+                            <button class="btn" style="padding: 5px 8px; font-size: 12px;" onclick="completeTask(this, ${xp})">✓</button>
+                        </div>
+                    </div>
+                `;
+                taskList.innerHTML += html;
+            });
+        }
+
+        function completeTask(btn, xpReward) {
+            if (btn.disabled) return;
+            
+            btn.disabled = true;
+            btn.style.background = 'var(--success)';
+            btn.style.color = 'white';
+            btn.innerText = 'DONE';
+
+            addXP(xpReward);
+            
+            user.tasksDone++;
+            document.getElementById('ui-task-completed').innerText = user.tasksDone;
+
+            // All tasks complete bonus
+            if (user.tasksDone >= 4) {
+                user.streak++;
+                document.getElementById('ui-streak').innerText = user.streak;
+                addXP(50);
+                alertMsg("Daily Quests Completed! +50 XP Bonus. Streak Increased!");
+            }
+            saveData();
+        }
+
+        // --- LEVEL UP LOGIC ---
+        function addXP(amount) {
+            user.xp += amount;
+            
+            // Level Up Formula: Level * 100
+            let xpNeeded = user.level * 100;
+            
+            if (user.xp >= xpNeeded) {
+                user.xp -= xpNeeded;
+                user.level++;
+                user.power += 50;
+                user.stats.str += 2; user.stats.agi += 2; // Buff stats
+                alertMsg(`LEVEL UP! You are now Level ${user.level}. Tasks will be slightly harder!`);
+                
+                // Regenerate tasks with new higher difficulty
+                document.getElementById('ui-task-completed').innerText = 0;
+                user.tasksDone = 0;
+                generateTasks();
+            }
+            updateUI();
+        }
+
+        function updateUI() {
+            let xpNeeded = user.level * 100;
+            
+            document.getElementById('ui-level').innerText = user.level;
+            document.getElementById('ui-rank').innerText = user.level > 5 ? "SILVER III" : (user.level > 10 ? "GOLD III" : "BRONZE III");
+            document.getElementById('ui-power').innerText = user.power;
+            document.getElementById('header-gold').innerText = "🪙 " + user.gold;
+            
+            document.getElementById('ui-xp-text').innerText = `${user.xp} / ${xpNeeded}`;
+            let percent = (user.xp / xpNeeded) * 100;
+            document.getElementById('ui-xp-bar').style.width = `${percent}%`;
+        }
+
+        // --- SEARCH PLAYER LOGIC ---
+        function searchHunter() {
+            const code = document.getElementById('search-id').value.trim().toUpperCase();
+            const resultDiv = document.getElementById('search-result');
+            
+            if(code === '') return;
+
+            resultDiv.style.display = 'block';
+            
+            // Dummy Database Search Simulation
+            if (code === 'HNT-KGWNG') {
+                resultDiv.innerHTML = `<h4 style="color:var(--gold)">Shuaib</h4><p>Level: 5</p><p>Power: 450</p>`;
+            } else if (code === 'HNT-SHUAIB') {
+                resultDiv.innerHTML = `<h4 style="color:var(--gold)">Admin</h4><p>Level: 99</p><p>Power: 9999</p>`;
+            } else if (code === user.id) {
+                resultDiv.innerHTML = `<h4 style="color:var(--gold)">${user.name} (You)</h4><p>Level: ${user.level}</p><p>Power: ${user.power}</p>`;
+            } else {
+                resultDiv.innerHTML = `<p style="color:var(--danger)">Hunter not found!</p>`;
+            }
+        }
+
+        // --- SHOP & RESET ---
+        function buyItem(item, cost) {
+            if (user.gold >= cost) {
+                user.gold -= cost;
+                updateUI();
+                alertMsg(`Purchased ${item}!`);
+                saveData();
+            } else {
+                alertMsg("Not enough Gold!");
+            }
+        }
+
+        function resetGame() {
+            if(confirm("Are you sure? This will delete all your progress!")) {
+                localStorage.removeItem('hunterData');
+                location.reload();
+            }
+        }
+
+        // --- UTILITIES ---
+        function switchTab(tabId) {
+            document.querySelectorAll('.container').forEach(c => c.classList.remove('active'));
+            document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+            
+            document.getElementById('tab-' + tabId).classList.add('active');
+            event.currentTarget.classList.add('active');
+        }
+
+        function alertMsg(msg) {
+            document.getElementById('alert-msg').innerText = msg;
+            document.getElementById('custom-alert').style.display = 'block';
+        }
+
+        function saveData() {
+            localStorage.setItem('hunterData', JSON.stringify(user));
+        }
+
+        function loadData() {
+            const data = localStorage.getItem('hunterData');
+           
